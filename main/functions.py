@@ -21,11 +21,12 @@ async def find_divisors(n):
     tasks = []
     for start in range(1, int(n ** 0.5) + 1, chunk):
         end = min(start + chunk, int(n ** 0.5) + 1)
-        tasks.append(asyncio.to_thread(find_divisors_in_range, n, start, end))
+        tasks.append(find_divisors_in_range(n, start, end))
     results = await asyncio.gather(*tasks)
     divisors = set()
     for result in results:
         divisors.update(result)
+    print(*sorted(divisors))
     return sorted(divisors)
 
 
@@ -34,6 +35,7 @@ def write_to_file(filename, content):
     """Запись номера файла в его содержимое"""
     with open(filename, 'w') as f:
         f.write(content)
+    print(filename, "created")
 
 
 async def create_file(index):
@@ -86,3 +88,12 @@ async def make_requests_to_example(url, count, limit, filename):
                 f.write(f"Request {i}: Status {status}\n")
         assert len(responses) == count
         print(f"Completed {len(responses)} requests")
+
+
+# asyncio.run(find_divisors(150000))
+
+# asyncio.run(create_files(10))
+
+# asyncio.run(make_requests_to_google())
+
+# asyncio.run(make_requests_to_example('https://example.com/', 50, 10, 'exmpl.txt'))
