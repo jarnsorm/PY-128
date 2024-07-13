@@ -26,7 +26,6 @@ async def find_divisors(n):
     divisors = set()
     for result in results:
         divisors.update(result)
-    print(*sorted(divisors))
     return sorted(divisors)
 
 
@@ -90,7 +89,7 @@ async def make_requests_to_example(url, count, limit, filename):
         print(f"Completed {len(responses)} requests")
 
 
-# asyncio.run(find_divisors(150000))
+asyncio.run(find_divisors(1000))
 
 # asyncio.run(create_files(10))
 
