@@ -14,10 +14,12 @@ async def find_divisors_in_range(n, start, end):
     return divisors
 
 
-async def find_divisors(n):
+async def find_divisors(n: int):
     """Создаем диапазоны, вызываем "поиск делителя в заданных диапазонах" параллельно в
     потоках, выводим отсортированный результат"""
-    chunk = 100000
+    if not (1_000_000 <= n <= 20_000_000):
+        raise ValueError("Заданное число вне диапазона")
+    chunk = 100_000
     tasks = []
     for start in range(1, int(n ** 0.5) + 1, chunk):
         end = min(start + chunk, int(n ** 0.5) + 1)
@@ -26,6 +28,7 @@ async def find_divisors(n):
     divisors = set()
     for result in results:
         divisors.update(result)
+    print(sorted(divisors))
     return sorted(divisors)
 
 
@@ -44,7 +47,7 @@ async def create_file(index):
     await asyncio.to_thread(write_to_file, filename, content)
 
 
-async def create_files(n):
+async def create_files(n: int):
     """Создание и наполнение контентом n файлов параллельно"""
     tasks = [create_file(i) for i in range(1, n + 1)]
     await asyncio.gather(*tasks)
@@ -89,7 +92,7 @@ async def make_requests_to_example(url, count, limit, filename):
         print(f"Completed {len(responses)} requests")
 
 
-asyncio.run(find_divisors(1000))
+asyncio.run(find_divisors(1000000))
 
 # asyncio.run(create_files(10))
 
