@@ -30,7 +30,7 @@ async def test_find_divisors_out_of_range(num):
         await find_divisors(num)
 
 
-#2 Параметризация и тестирование на создание? проверку и удаление файлов
+#2 Параметризация и тестирование на создание файлов
 @pytest.mark.parametrize('index', [1, 5, 10])
 @pytest.mark.asyncio
 async def test_create_files(index):
@@ -43,6 +43,13 @@ async def test_create_files(index):
     await delete_multiple_files(index)
     print(f'{index} files has been deleted')
 
+
+@pytest.mark.parametrize('index', [-1, 0])
+@pytest.mark.asyncio
+async def test_create_files_out_of_range(index):
+    """Тестирование функции create_files(n) для значений вне диапазона"""
+    with pytest.raises(ValueError, match='Заданное число вне диапазона'):
+        await create_files(index)
 #3
 
 

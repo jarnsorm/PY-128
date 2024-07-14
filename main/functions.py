@@ -49,6 +49,8 @@ async def create_file(index):
 
 async def create_files(n: int):
     """Создание и наполнение контентом n файлов параллельно"""
+    if not (n > 0):
+        raise ValueError("Заданное число вне диапазона")
     tasks = [create_file(i) for i in range(1, n + 1)]
     await asyncio.gather(*tasks)
 
@@ -92,7 +94,7 @@ async def make_requests_to_example(url, count, limit, filename):
         print(f"Completed {len(responses)} requests")
 
 
-asyncio.run(find_divisors(1000000))
+# asyncio.run(find_divisors(1000000))
 
 # asyncio.run(create_files(10))
 
