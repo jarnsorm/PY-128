@@ -1,7 +1,13 @@
+import asyncio
+from pathlib import Path
+from unittest.mock import patch, AsyncMock
+import aiofiles
+import aiohttp
 import pytest
+from aioresponses import aioresponses
 
-from main.functions import find_divisors, create_files
-from tests.functions_for_tests import check_multiple_files, delete_multiple_files
+from main.functions import find_divisors, create_files, make_requests_to_example, limited_fetch, fetch
+from tests.functions_for_tests import check_multiple_files, delete_multiple_files, check_file_content, delete_file
 
 
 #1 Параметризация и тестирование на нахождение делителей
@@ -37,11 +43,8 @@ async def test_create_files(index):
     """Тестирование функции create_files(n) с набором параметров, сравнение имен и содержимого созданных файлов,
     удаление созданных файлов"""
     await create_files(index)
-    print(f'{index} files has been created')
     await check_multiple_files(index)
-    print(f'{index} files has been checked')
     await delete_multiple_files(index)
-    print(f'{index} files has been deleted')
 
 
 @pytest.mark.parametrize('index', [-1, 0])
@@ -50,7 +53,53 @@ async def test_create_files_out_of_range(index):
     """Тестирование функции create_files(n) для значений вне диапазона"""
     with pytest.raises(ValueError, match='Заданное число вне диапазона'):
         await create_files(index)
+
+
 #3
+@pytest.fixture(scope="session")
+def setup_data():
+    """фикстура для последующих тестов"""
+    data = {
+        "url": "http://huite.net",
+        "count": 50,
+        "limit": 10,
+        "expected_status": 200,
+        "expected_text": "<html>Хня</html>",
+        "filename": "test.txt"
+    }
+    yield data
+
+
+@pytest.mark.asyncio
+async def test_fetch(setup_data):
+    """тест функции, выполняющей соединение"""
+    with aioresponses() as m:
+        m.get(setup_data["url"], body=setup_data["expected_text"], status=setup_data["expected_status"])
+        async with aiohttp.ClientSession() as session:
+            response_text = await fetch(session, setup_data["url"])
+    assert response_text == setup_data["expected_text"]
+
+
+@pytest.mark.asyncio
+async def test_limited_fetch(setup_data):
+    """тест семафорной функции"""
+    sem = asyncio.Semaphore(2)
+    with aioresponses() as m:
+        m.get(setup_data["url"], status=setup_data["expected_status"])
+        async with aiohttp.ClientSession() as session:
+            status = await limited_fetch(sem, session, setup_data["url"])
+    assert status == setup_data["expected_status"]
 
 
 #4
+@pytest.mark.asyncio
+async def test_make_requests_to_example(setup_data):
+    """Тестирование асинхронных get-запросов с мокированием подфункции семафора и подключения, записью и проверкой
+    результатов"""
+    with patch('main.functions.limited_fetch', new_callable=AsyncMock) as mock_fetch:
+        mock_fetch.return_value = setup_data["expected_status"]
+        results = await make_requests_to_example(setup_data["url"], setup_data["count"], setup_data["limit"],
+                                                 setup_data["filename"])
+        assert results == {"massage": f"OK: Completed {setup_data["count"]} requests"}
+    await check_file_content(setup_data["count"], diff=True, filename=setup_data["filename"])
+    await delete_file(setup_data["filename"])

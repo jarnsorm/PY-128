@@ -1,5 +1,11 @@
 import asyncio
+
+import aiofiles
 import aiohttp
+from pathlib import Path
+import time
+
+start_time = time.time()
 
 
 # поиск делителей числа. главная функция - find_divisors()
@@ -15,6 +21,7 @@ async def find_divisors_in_range(n, start, end):
 
 
 async def find_divisors(n: int):
+
     """Создаем диапазоны, вызываем "поиск делителя в заданных диапазонах" параллельно в
     потоках, выводим отсортированный результат"""
     if not (1_000_000 <= n <= 20_000_000):
@@ -28,15 +35,20 @@ async def find_divisors(n: int):
     divisors = set()
     for result in results:
         divisors.update(result)
-    print(sorted(divisors))
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Время выполнения задачи: {elapsed_time:.4f} секунд")
     return sorted(divisors)
 
 
 # создание и наполнение файлов. главная функция - create_files()
 def write_to_file(filename, content):
-    """Запись номера файла в его содержимое"""
-    with open(filename, 'w') as f:
+    files_dir = Path(__file__).resolve().parent / 'files'
+    files_dir.mkdir(parents=True, exist_ok=True)
+    file_path = files_dir / filename
+    with file_path.open('w') as f:
         f.write(content)
+
     print(filename, "created")
 
 
@@ -53,6 +65,9 @@ async def create_files(n: int):
         raise ValueError("Заданное число вне диапазона")
     tasks = [create_file(i) for i in range(1, n + 1)]
     await asyncio.gather(*tasks)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Время выполнения задачи: {elapsed_time:.4f} секунд")
 
 
 # Отправка запросов на http://google.com с ограничениями 10/сек и 50 всего. главная функция - make_requests_to_google()
@@ -67,7 +82,8 @@ async def fetch(session, url):
 async def limited_fetch(sem, session, url):
     """Ограничение количества одновременных запросов"""
     async with sem:
-        return await fetch(session, url)
+        async with session.get(url) as response:
+            return response.status
 
 
 async def make_requests_to_google():
@@ -84,20 +100,23 @@ async def make_requests_to_google():
 async def make_requests_to_example(url, count, limit, filename):
     """По заданным параметрам создает HTTP-запросы, записывает ответы в файл и сверяет кол-во запросов"""
     sem = asyncio.Semaphore(limit)
+    files_dir = Path(__file__).resolve().parent / 'files'
+    files_dir.mkdir(parents=True, exist_ok=True)
+    file_path = files_dir / filename
     async with aiohttp.ClientSession() as session:
         tasks = [limited_fetch(sem, session, url) for _ in range(count)]
         responses = await asyncio.gather(*tasks)
-        with open(filename, 'w') as f:
+        async with aiofiles.open(file_path, 'w') as f:
             for i, status in enumerate(responses, 1):
-                f.write(f"Request {i}: Status {status}\n")
-        assert len(responses) == count
-        print(f"Completed {len(responses)} requests")
+                await f.write(f"Request {i}: Status {status}\n")
+        if len(responses) == count:
+            return {"massage": f"OK: Completed {len(responses)} requests"}
+        return {"massage": f"WARNING: Completed {count} requests"}
 
-
-# asyncio.run(find_divisors(1000000))
+# asyncio.run(find_divisors(20_000_000))
 
 # asyncio.run(create_files(10))
 
 # asyncio.run(make_requests_to_google())
 
-# asyncio.run(make_requests_to_example('https://example.com/', 50, 10, 'exmpl.txt'))
+# asyncio.run(make_requests_to_example('https://example.com/', 50, 10, 'xmpl.txt'))
