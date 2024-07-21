@@ -23,7 +23,7 @@ async def check_file_content(count, diff=False, filename=None):
 
 async def check_multiple_files(index):
     """проверка всех заданных файлов"""
-    tasks = [check_file_content(i) for i in range(1, index + 1)]
+    tasks = [check_file_content(count=i) for i in range(1, index + 1)]
     results = await asyncio.gather(*tasks)
     return results
 

@@ -15,4 +15,5 @@
     asyncio.run(make_requests_to_example('https://example.com/', 50, 10, 'xmpl.txt'))
 
 Запуск тестов производится через терминал:
-    python -m pytest -vv tests
+    python -m pytest -vv --cov=main tests
+
