@@ -83,7 +83,7 @@ async def test_fetch(setup_data):
 @pytest.mark.asyncio
 async def test_limited_fetch(setup_data):
     """тест семафорной функции"""
-    sem = asyncio.Semaphore(2)
+    sem = asyncio.Semaphore(setup_data["limit"])
     with aioresponses() as m:
         m.get(setup_data["url"], status=setup_data["expected_status"])
         async with aiohttp.ClientSession() as session:
