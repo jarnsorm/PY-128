@@ -1,7 +1,7 @@
 import asyncio
-from pathlib import Path
+
 from unittest.mock import patch, AsyncMock
-import aiofiles
+
 import aiohttp
 import pytest
 from aioresponses import aioresponses

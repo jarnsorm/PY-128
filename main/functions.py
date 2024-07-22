@@ -1,11 +1,11 @@
 import asyncio
+import cProfile
+import io
+import pstats
 
 import aiofiles
 import aiohttp
 from pathlib import Path
-import time
-
-start_time = time.time()
 
 
 # поиск делителей числа. главная функция - find_divisors()
@@ -21,7 +21,6 @@ async def find_divisors_in_range(n, start, end):
 
 
 async def find_divisors(n: int):
-
     """Создаем диапазоны, вызываем "поиск делителя в заданных диапазонах" параллельно в
     потоках, выводим отсортированный результат"""
     if not (1_000_000 <= n <= 20_000_000):
@@ -35,9 +34,7 @@ async def find_divisors(n: int):
     divisors = set()
     for result in results:
         divisors.update(result)
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(f"Время выполнения задачи: {elapsed_time:.4f} секунд")
+    print(*sorted(divisors))
     return sorted(divisors)
 
 
@@ -65,9 +62,6 @@ async def create_files(n: int):
         raise ValueError("Заданное число вне диапазона")
     tasks = [create_file(i) for i in range(1, n + 1)]
     await asyncio.gather(*tasks)
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(f"Время выполнения задачи: {elapsed_time:.4f} секунд")
 
 
 # Отправка запросов на http://google.com с ограничениями 10/сек и 50 всего. главная функция - make_requests_to_google()
@@ -94,7 +88,7 @@ async def make_requests_to_google():
         tasks = [limited_fetch(sem, session, url) for _ in range(50)]
         results = await asyncio.gather(*tasks)
         for i, result in enumerate(results, 1):
-            print(f"Response {i}: {result[:100]}...")
+            print(f"Response {i}: {result}...")
 
 
 async def make_requests_to_example(url, count, limit, filename):
@@ -113,10 +107,26 @@ async def make_requests_to_example(url, count, limit, filename):
             return {"massage": f"OK: Completed {len(responses)} requests"}
         return {"massage": f"WARNING: Completed {count} requests"}
 
-# asyncio.run(find_divisors(20_000_000))
 
-# asyncio.run(create_files(10))
+#5 профилирование этого дерьма
+def profile_afunction(function, *args):
+    """Профилирование  асинхронных функций"""
+    f_profile = cProfile.Profile()
+    f_profile.enable()
+    asyncio.run(function(*args))
+    f_profile.disable()
 
-# asyncio.run(make_requests_to_google())
+    stream = io.StringIO()
+    profile_stats = pstats.Stats(f_profile, stream=stream).sort_stats('cumulative')
+    profile_stats.print_stats()
+    print(stream.getvalue())
 
-# asyncio.run(make_requests_to_example('https://example.com/', 50, 10, 'xmpl.txt'))
+
+if __name__ == "__main__":
+    """Запуск функций с профилированием через cProfile"""
+    print("GO!")
+    # profile_afunction(find_divisors,20_000_000)
+    # profile_afunction(create_files,10)
+    profile_afunction(make_requests_to_google)
+    # profile_afunction(make_requests_to_example,'https://example.com/', 50, 10, 'xmpl.txt')
+

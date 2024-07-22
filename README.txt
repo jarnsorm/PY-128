@@ -8,12 +8,17 @@
     tests: модули test_asyncio.py - основной модуль тестирования и functions_for_tests.py - модуль, содержащий логику
     тестов.
 
-Запуск основного модуля производится через вызов функций:
-    asyncio.run(find_divisors(20_000_000))
-    asyncio.run(create_files(10))
-    asyncio.run(make_requests_to_google())
-    asyncio.run(make_requests_to_example('https://example.com/', 50, 10, 'xmpl.txt'))
+Запуск основного модуля производится через выбор функции для профилирования и ран модуля:
+    if __name__ == "__main__":
+        """Запуск функций с профилированием через cProfile"""
+        print("GO!")
+        # profile_afunction(find_divisors,20_000_000)
+        # profile_afunction(create_files,10)
+        # profile_afunction(make_requests_to_google)
+        # profile_afunction(make_requests_to_example,'https://example.com/', 50, 10, 'xmpl.txt')
 
-Запуск тестов производится через терминал:
+Запуск тестов с выводом покрытия производится через терминал:
     python -m pytest -vv --cov=main tests
+
+
 
