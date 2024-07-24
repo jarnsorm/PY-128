@@ -2,12 +2,29 @@ import asyncio
 import cProfile
 import io
 import pstats
+from functools import wraps
 import aiofiles
 import aiohttp
 from pathlib import Path
 
 files_dir = Path(__file__).resolve().parent.parent / 'files'
 files_dir.mkdir(parents=True, exist_ok=True)
+
+
+def profile_async_function(function):
+    """Декоратор для профилирования асинхронных функций"""
+    @wraps(function)
+    async def wrapper(*args, **kwargs):
+        f_profile = cProfile.Profile()
+        f_profile.enable()
+        result = await function(*args, **kwargs)
+        f_profile.disable()
+        str_ = io.StringIO()
+        profile_stats = pstats.Stats(f_profile, stream=str_).sort_stats('cumulative')
+        profile_stats.print_stats()
+        print(str_.getvalue())
+        return result
+    return wrapper
 
 
 # поиск делителей числа. главная функция - find_divisors()
@@ -22,6 +39,7 @@ async def find_divisors_in_range(n, start, end):
     return divisors
 
 
+@profile_async_function
 async def find_divisors(n: int):
     """Создаем диапазоны, вызываем "поиск делителя в заданных диапазонах" параллельно в
     потоках, выводим отсортированный результат"""
@@ -56,6 +74,7 @@ async def create_file(index):
     await asyncio.to_thread(write_to_file, filename, content)
 
 
+@profile_async_function
 async def create_files(n: int):
     """Создание и наполнение контентом n файлов параллельно"""
     if not (n > 0):
@@ -80,6 +99,7 @@ async def limited_fetch(sem, session, url):
             return response.status
 
 
+@profile_async_function
 async def make_requests_to_google():
     """Создание семафора, параллельное выполнение HTTP-запросов, вывод результатов"""
     url = "http://google.com"
@@ -91,6 +111,7 @@ async def make_requests_to_google():
             print(f"Response {i}: {result}...")
 
 
+@profile_async_function
 async def make_requests_to_example(url, count, limit, filename):
     """По заданным параметрам создает HTTP-запросы, записывает ответы в файл и сверяет кол-во запросов"""
     sem = asyncio.Semaphore(limit)
@@ -106,24 +127,10 @@ async def make_requests_to_example(url, count, limit, filename):
         return {"massage": f"WARNING: Completed {count} requests"}
 
 
-# 5 профилирование этого дерьма
-def profile_afunction(function, *args):
-    """Профилирование  асинхронных функций"""
-    f_profile = cProfile.Profile()
-    f_profile.enable()
-    asyncio.run(function(*args))
-    f_profile.disable()
-
-    str_ = io.StringIO()
-    profile_stats = pstats.Stats(f_profile, stream=str_).sort_stats('cumulative')
-    profile_stats.print_stats()
-    print(str_.getvalue())
-
-
 if __name__ == "__main__":
-    """Запуск функций с профилированием через cProfile"""
+    """Запуск функций с профилированием через cProfile с использованием декоратора"""
     print("GO!")
-    # profile_afunction(find_divisors,20_000_000)
-    # profile_afunction(create_files,10)
-    profile_afunction(make_requests_to_google)
-    # profile_afunction(make_requests_to_example,'https://example.com/', 50, 10, 'xmpl.txt')
+    # asyncio.run(find_divisors(20_000_000))
+    asyncio.run(create_files(10))
+    # asyncio.run(make_requests_to_google())
+    # asyncio.run(make_requests_to_example('https://example.com/', 50, 10, 'xmpl.txt'))
